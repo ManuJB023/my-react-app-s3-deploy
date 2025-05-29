@@ -1,72 +1,92 @@
-# Getting Started with Create React App
+# Deploy React App to AWS S3 + CloudFront (via GitHub Actions)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project demonstrates how to deploy a React application to AWS S3 and CloudFront using GitHub Actions for CI/CD.
 
-## Available Scripts
+## 🚀 Features
+- Automated deployment to AWS S3 via GitHub Actions
+- CloudFront CDN for global content delivery
+- Cache invalidation on every deployment
+- Secure S3 bucket access via Origin Access Control (OAC)
 
-In the project directory, you can run:
+## 🔧 Prerequisites
+- AWS account with permissions to:
+  - Create S3 buckets
+  - Configure CloudFront distributions
+  - Create IAM users with programmatic access
+- GitHub repository for your React app
+- Node.js 18+ installed locally
 
-### `npm start`
+- The workflow does the following:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+1. **Triggers** on every `push` to the `main` branch.
+2. **Installs dependencies** and builds the React app.
+3. **Deploys** the `/build` folder to an AWS S3 bucket.
+4. **Invalidates CloudFront cache** to reflect updates immediately.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🌐 Live Deployment
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+📍 **URL**: [https://d8z73yzuf2mkb.cloudfront.net](https://d8z73yzuf2mkb.cloudfront.net)
 
-### `npm run build`
+## ⚙️ AWS Setup
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 1. Create S3 Bucket
+- Name: `my-react-app-bucket-devops`
+- Disable *Block all public access* (we'll restrict access via CloudFront OAC)
+- Enable static website hosting (optional, only for testing)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 2. Set Up CloudFront
+- Create distribution with S3 as origin
+- Enable **Origin Access Control (OAC)**
+- Set default root object to `index.html`
+- Configure custom error responses for SPA routing:
+  - 403 → `/index.html` (200)
+  - 404 → `/index.html` (200)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 🔐 AWS Configuration
 
-### `npm run eject`
+Set these GitHub secrets in your repo:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+| Secret Name                  | Description                                |
+|-----------------------------|--------------------------------------------|
+| `AWS_ACCESS_KEY_ID`         | Your AWS access key                        |
+| `AWS_SECRET_ACCESS_KEY`     | Your AWS secret access key                |
+| `AWS_REGION`                | Your AWS region (e.g., `us-east-1`)       |
+| `AWS_S3_BUCKET`             | Your S3 bucket name                        |
+| `CLOUDFRONT_DISTRIBUTION_ID`| Your CloudFront distribution ID            |
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🧠 Notes
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- **S3 Bucket** should be configured for static website hosting, OR allow CloudFront access via Origin Access Control (OAC).
+- Ensure `index.html` is set as the **default root object** in CloudFront.
+- A proper **bucket policy** must be applied for CloudFront access (if using OAC).
 
-## Learn More
+### 3. IAM User for GitHub Actions
+Create a user with:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:ListBucket",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::my-react-app-bucket-devops",
+                "arn:aws:s3:::my-react-app-bucket-devops/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": "cloudfront:CreateInvalidation",
+            "Resource": "arn:aws:cloudfront::YOUR_ACCOUNT_ID:distribution/YOUR_DISTRIBUTION_ID"
+        }
+    ]
+}
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-# Trigger test deployment
-# Test Deployment
